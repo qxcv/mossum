@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """
 Mossum is a tool for summarizing results from Stanford's Moss. The tool
 generates a graph for (multiple) results from Moss, which can help in
@@ -25,33 +24,87 @@ from faker import Faker
 from collections import defaultdict
 
 parser = argparse.ArgumentParser(description=__doc__)
-parser.add_argument('urls', metavar='URL', nargs='*',
-                   help='URLs to Moss result pages.')
-parser.add_argument('--min-percent', '-p', dest='min_percent', metavar='P', type=int, default=90,
-                   help='All matches where less than P%% of both files are matched are ignored. (Default: 90)')
-parser.add_argument('--min-lines', '-l', dest='min_lines', metavar='L', type=int, default=1,
-                   help='All matches where fewer than L lines are matched are ignored. (Default: 1)')
-parser.add_argument('--format', '-f', default='png', help='Format of output files. See Graphviz documentation.')
-parser.add_argument('--transformer', '-t', default='.*',
-                   help='A regular expression that is used to transform the name of them matched files.')
-parser.add_argument('--anonymize', '-a', default=False, action='store_true',
-                   help='Substitute names of matched files for random names')
-parser.add_argument('--merge', '-m', default=False, action='store_true',
-                   help='Merge all reports into one image')
-parser.add_argument('--report', '-r', default=False, action='store_true',
-                   help='Generates a report showing how many submissions each pair has in common.')
-parser.add_argument('--show-links', '-s', default=False, dest='show_links', action='store_true',
-                   help='Add hyperlinks to graph edges to Moss results. Only works for the formats svg and xlib.')
-parser.add_argument('--output', '-o', default=None,
-                   help='Name of output file.')
-parser.add_argument('--filter', metavar='N', nargs='+', default=None,
-                   help='Include only matches between these names.')
-parser.add_argument('--filteri', metavar='N', nargs='+', default=None,
-                   help='Include only matches involving these names.')
-parser.add_argument('--filterx', metavar='N', nargs='+', default=None,
-                   help='Exclude matches between these names.')
-parser.add_argument('--filterxi', metavar='N', nargs='+', default=None,
-                   help='Exclude matches involving any of these names.')
+parser.add_argument('urls',
+                    metavar='URL',
+                    nargs='*',
+                    help='URLs to Moss result pages.')
+parser.add_argument(
+    '--min-percent',
+    '-p',
+    dest='min_percent',
+    metavar='P',
+    type=int,
+    default=90,
+    help='All matches where less than P%% of both files are matched are '
+         'ignored. (Default: 90)')
+parser.add_argument(
+    '--min-lines',
+    '-l',
+    dest='min_lines',
+    metavar='L',
+    type=int,
+    default=1,
+    help='All matches where fewer than L lines are matched are ignored. '
+         '(Default: 1)')
+parser.add_argument('--format',
+                    '-f',
+                    default='png',
+                    help='Format of output files. See Graphviz documentation.')
+parser.add_argument(
+    '--transformer',
+    '-t',
+    default='.*',
+    help='A regular expression that is used to transform the name of them '
+         'matched files.')
+parser.add_argument('--anonymize',
+                    '-a',
+                    default=False,
+                    action='store_true',
+                    help='Substitute names of matched files for random names')
+parser.add_argument('--merge',
+                    '-m',
+                    default=False,
+                    action='store_true',
+                    help='Merge all reports into one image')
+parser.add_argument(
+    '--report',
+    '-r',
+    default=False,
+    action='store_true',
+    help='Generates a report showing how many submissions each pair has in '
+         'common.')
+parser.add_argument(
+    '--show-links',
+    '-s',
+    default=False,
+    dest='show_links',
+    action='store_true',
+    help='Add hyperlinks to graph edges to Moss results. Only works for the '
+         'formats svg and xlib.')
+parser.add_argument('--output',
+                    '-o',
+                    default=None,
+                    help='Name of output file.')
+parser.add_argument('--filter',
+                    metavar='N',
+                    nargs='+',
+                    default=None,
+                    help='Include only matches between these names.')
+parser.add_argument('--filteri',
+                    metavar='N',
+                    nargs='+',
+                    default=None,
+                    help='Include only matches involving these names.')
+parser.add_argument('--filterx',
+                    metavar='N',
+                    nargs='+',
+                    default=None,
+                    help='Exclude matches between these names.')
+parser.add_argument('--filterxi',
+                    metavar='N',
+                    nargs='+',
+                    default=None,
+                    help='Exclude matches involving any of these names.')
 args = None
 
 
@@ -82,26 +135,27 @@ class Filter:
             setattr(self, f, None)
 
         for f in filters:
-            if getattr(args, f) != None:
+            if getattr(args, f) is not None:
                 setattr(self, f, set(getattr(args, f)))
 
     def include(self, match):
         first = match.first.name
         second = match.second.name
-        if (self.filter is not None and (first not in self.filter or second not
-            in self.filter)):
+        if (self.filter is not None and (first not in self.filter or
+                                         second not in self.filter)):
             return False
-        if (self.filteri is not None and (first not in self.filteri and second
-            not in self.filteri)):
+        if (self.filteri is not None and (first not in self.filteri and
+                                          second not in self.filteri)):
             return False
-        if (self.filterx is not None and (first in self.filterx and second in
-            self.filterx)):
+        if (self.filterx is not None and (first in self.filterx and
+                                          second in self.filterx)):
             return False
-        if (self.filterxi is not None and (first in self.filterxi or second in
-            self.filterxi)):
+        if (self.filterxi is not None and (first in self.filterxi or
+                                           second in self.filterxi)):
             return False
-        return match.lines > args.min_lines and (match.first.percent > args.min_percent  or
-                match.second.percent > args.min_percent)
+        return match.lines > args.min_lines and (
+            match.first.percent > args.min_percent or
+            match.second.percent > args.min_percent)
 
 
 def date_str():
@@ -116,7 +170,7 @@ def parse_col(col):
             name = '_'.join(m.groups())
         else:
             name = m.group()
-    per = int(re.search(r'\d+',per).group())
+    per = int(re.search(r'\d+', per).group())
     return File(name, per)
 
 
@@ -136,7 +190,7 @@ def anonymize(matches):
         s.add(m.first.name)
         s.add(m.second.name)
 
-    new_names = dict(zip(s,random_names(len(s))))
+    new_names = dict(zip(s, random_names(len(s))))
 
     for m in matches:
         m.first.name = new_names[m.first.name]
@@ -147,17 +201,20 @@ def generate_report(results):
     pairs = defaultdict(list)
     for res in results:
         for match in res.matches:
-            pairs[(match.first.name, match.second.name)].append( (res.name, match) )
+            pairs[(match.first.name, match.second.name)].append(
+                (res.name, match))
 
     if args.output:
         base = args.output
     else:
-        base = '+'.join(map(lambda x:x.name, results))
+        base = '+'.join(map(lambda x: x.name, results))
     filename = '%s.txt' % base
 
     with open(filename, 'w') as f:
-        for pair, matches in sorted(pairs.items(),
-                key=lambda x: (len(x[1]), sorted(map(lambda x: x[0], x[1]))), reverse=True):
+        for pair, matches in sorted(
+                pairs.items(),
+                key=lambda x: (len(x[1]), sorted(map(lambda x: x[0], x[1]))),
+                reverse=True):
             f.write('Pair: %s and %s\n' % pair)
             for name, match in sorted(matches):
                 f.write('%s: %s\n' % (name, match.url))
@@ -166,8 +223,8 @@ def generate_report(results):
 
 
 def merge_results(results):
-    name = '+'.join(map(lambda x:x.name, results))
-    matches = sum(map(lambda x:x.matches, results), [])
+    name = '+'.join(map(lambda x: x.name, results))
+    matches = sum(map(lambda x: x.matches, results), [])
     return Results(name, matches)
 
 
@@ -185,15 +242,15 @@ def get_results(moss_url):
     matches = []
 
     for row in soup.table('tr')[1:]:
-        first, second, lines = map(lambda x:x.text, row('td'))
+        first, second, lines = map(lambda x: x.text, row('td'))
         first = parse_col(first)
-        second  = parse_col(second)
+        second = parse_col(second)
         lines = int(lines)
         url = row.a['href']
         matches.append(Match(first, second, lines, url))
 
     fil = Filter()
-    matches = list(filter(fil.include,matches))
+    matches = list(filter(fil.include, matches))
 
     return Results(name, matches)
 
@@ -205,9 +262,7 @@ def image(results):
     for m in results.matches:
         extra_opts = {}
         if args.show_links:
-            extra_opts = {'label': 'M',
-                    'labelURL': m.url,
-                    'URL': m.url}
+            extra_opts = {'label': 'M', 'labelURL': m.url, 'URL': m.url}
         graph.add_edge(pydot.Edge(m.first.name, m.second.name, **extra_opts))
 
     if args.output:
@@ -237,7 +292,6 @@ def main():
     for x in urls:
         res = get_results(x)
         all_res.append(res)
-
 
     if args.merge:
         merged = merge_results(all_res)
