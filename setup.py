@@ -19,13 +19,9 @@ setup(
         "fake-factory>=0.4.2",
         "html5lib>=0.999",
         "ipython>=2.3.0",
-        "pydot>=1.0.29",
+        "pygraphviz>=1.3.1",
         "pyparsing>=2.0.2",
         "requests>=2.4.3",
         "six>=1.8.0",
     ],
-    dependency_links = [
-        "git+https://github.com/nlhepler/pydot/#egg=pydot-1.0.29"
-    ],
 )
-

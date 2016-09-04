@@ -11,17 +11,17 @@ to Moss, this can help in identifying which students have multiple similar
 solutions.
 """
 
+import argparse
+from collections import defaultdict
+import datetime
+import os
 import re
 import sys
-import os
-import datetime
-import pydot
-import argparse
-import requests as r
 
 from bs4 import BeautifulSoup
 from faker import Faker
-from collections import defaultdict
+import pygraphviz
+import requests as r
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('urls',
@@ -36,7 +36,7 @@ parser.add_argument(
     type=int,
     default=90,
     help='All matches where less than P%% of both files are matched are '
-         'ignored. (Default: 90)')
+    'ignored. (Default: 90)')
 parser.add_argument(
     '--min-lines',
     '-l',
@@ -45,7 +45,7 @@ parser.add_argument(
     type=int,
     default=1,
     help='All matches where fewer than L lines are matched are ignored. '
-         '(Default: 1)')
+    '(Default: 1)')
 parser.add_argument('--format',
                     '-f',
                     default='png',
@@ -55,7 +55,7 @@ parser.add_argument(
     '-t',
     default='.*',
     help='A regular expression that is used to transform the name of them '
-         'matched files.')
+    'matched files.')
 parser.add_argument('--anonymize',
                     '-a',
                     default=False,
@@ -72,7 +72,7 @@ parser.add_argument(
     default=False,
     action='store_true',
     help='Generates a report showing how many submissions each pair has in '
-         'common.')
+    'common.')
 parser.add_argument(
     '--show-links',
     '-s',
@@ -80,7 +80,7 @@ parser.add_argument(
     dest='show_links',
     action='store_true',
     help='Add hyperlinks to graph edges to Moss results. Only works for the '
-         'formats svg and xlib.')
+    'formats svg and xlib.')
 parser.add_argument('--output',
                     '-o',
                     default=None,
@@ -256,14 +256,20 @@ def get_results(moss_url):
 
 
 def image(results):
-    graph = pydot.Dot(graph_type='graph')
+    graph = pygraphviz.AGraph(overlap="False")
 
     print('Generating image for %s' % results.name)
     for m in results.matches:
+        start, end, weight = m.first.name, m.second.name, m.lines
         extra_opts = {}
         if args.show_links:
-            extra_opts = {'label': 'M', 'labelURL': m.url, 'URL': m.url}
-        graph.add_edge(pydot.Edge(m.first.name, m.second.name, **extra_opts))
+            extra_opts = {'labelURL': m.url, 'URL': m.url}
+        graph.add_edge(start,
+                       end,
+                       color='blue',
+                       penwidth=(weight / 10),
+                       label='%dL' % weight,
+                       **extra_opts)
 
     if args.output:
         name = args.output
@@ -274,7 +280,8 @@ def image(results):
     if os.path.exists(filename):
         os.remove(filename)
 
-    graph.write(filename, format=args.format)
+    graph.layout()
+    graph.draw(path=filename, format=args.format)
     if args.format == 'xlib':
         os.remove(filename)
     print('DONE')
