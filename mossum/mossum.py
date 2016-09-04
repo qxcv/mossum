@@ -14,6 +14,7 @@ solutions.
 import argparse
 from collections import defaultdict
 import datetime
+import json
 import os
 import re
 import sys
@@ -22,6 +23,17 @@ from bs4 import BeautifulSoup
 from faker import Faker
 import pygraphviz
 import requests as r
+
+
+def json_dict(arg):
+    """argparse type which reads a JSON dictionary"""
+    with open(arg, 'r') as fp:
+        data = json.load(fp)
+    if not isinstance(data, dict):
+        raise argparse.ArgumentTypeError(
+            "'%s' does not contain a JSON dictionary" % arg)
+    return data
+
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('urls',
@@ -33,7 +45,7 @@ parser.add_argument(
     '-p',
     dest='min_percent',
     metavar='P',
-    type=int,
+    type=float,
     default=90,
     help='All matches where less than P%% of both files are matched are '
     'ignored. (Default: 90)')
@@ -56,6 +68,11 @@ parser.add_argument(
     default='.*',
     help='A regular expression that is used to transform the name of them '
     'matched files.')
+parser.add_argument('--names',
+                    '-n',
+                    default=None,
+                    type=json_dict,
+                    help='Read replacement names from JSON file')
 parser.add_argument('--anonymize',
                     '-a',
                     default=False,
@@ -164,13 +181,21 @@ def date_str():
 
 def parse_col(col):
     name, per = col.split()
+
+    per = int(re.search(r'\d+', per).group())
+
+    # Apply regex transform to names first
     m = re.match(args.transformer, name)
     if m:
         if m.groups():
             name = '_'.join(m.groups())
         else:
             name = m.group()
-    per = int(re.search(r'\d+', per).group())
+
+    # Apply replacement names later
+    if args.names is not None:
+        name = args.names.get(name, name)
+
     return File(name, per)
 
 
