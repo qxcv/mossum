@@ -16,7 +16,7 @@ setup(
     long_description='',
     install_requires=[
         "beautifulsoup4>=4.3.2",
-        "fake-factory>=0.4.2",
+        "Faker>=0.4.2",
         "html5lib>=0.999",
         "ipython>=2.3.0",
         "pygraphviz>=1.3.1",
